@@ -9,6 +9,8 @@
        (see app.js) with NO external map library and NO tile-server requests,
        so it renders identically on any network, firewall, or offline. -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="pro.css">
 
   <!-- Custom CSS -->
   <style>
@@ -250,8 +252,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   100% { transform: scale(0.8); opacity: 0; }
 }
 
-/* Concentric zoom-triggered danger rings (drawn as Leaflet SVG circles;
-   this class only styles the pulsing animation used on the DOM marker dot) */
+/* Concentric danger ring styles retained for compatibility with old reports. */
 .ring-pulse { animation: ringPulse 2.4s ease-out infinite; }
 @keyframes ringPulse {
   0% { stroke-opacity: 0.9; }
@@ -273,22 +274,6 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .ai-bbox-high { border-color: #ef4444; background: rgba(239, 68, 68, 0.18); box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
 .ai-bbox-med { border-color: #f59e0b; background: rgba(245, 158, 11, 0.18); box-shadow: 0 0 12px rgba(245, 158, 11, 0.3); }
 .ai-bbox-low { border-color: #10b981; background: rgba(16, 185, 129, 0.18); box-shadow: 0 0 10px rgba(16, 185, 129, 0.25); }
-
-/* Leaflet styling */
-.leaflet-container { background: #050b14 !important; font-family: var(--font-body) !important; }
-.light-theme .leaflet-container { background: #e2e8f0 !important; }
-
-.leaflet-popup-content-wrapper {
-  background: var(--bg-secondary) !important;
-  color: var(--text-main) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
-  padding: 0 !important;
-  overflow: hidden;
-}
-.leaflet-popup-tip { background: var(--bg-secondary) !important; border: 1px solid var(--border-color) !important; }
-.leaflet-popup-content { margin: 0 !important; line-height: 1.4 !important; }
 
 /* Custom button hover glow */
 .btn-glow { transition: all 0.25s ease; }
@@ -350,6 +335,17 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   height: 100%;
   background: radial-gradient(ellipse at 50% 50%, #0a2140 0%, #050e1e 70%, #030812 100%);
 }
+.qorvia-leaflet-map {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.qorvia-leaflet-map .leaflet-control-attribution {
+  font-size: 9px;
+  background: rgba(7, 13, 24, 0.75);
+  color: #94a3b8;
+}
+.qorvia-leaflet-map .leaflet-control-attribution a { color: #7dd3fc; }
 .satellite-theme-on .qorvia-map-bg {
   background: radial-gradient(ellipse at 50% 50%, #123a1f 0%, #0a2416 55%, #041206 100%);
 }
@@ -455,6 +451,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
       }
     }
   </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 </head>
 <body class="bg-oceanDark text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-black">
 
@@ -832,6 +829,10 @@ h1, h2, h3, h4, h5, h6, .font-heading {
             <button id="btn-toggle-basemap" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 transition cursor-pointer flex items-center gap-1">
               <span id="basemap-icon">🛰️</span><span id="basemap-text">Satellite Theme: OFF</span>
             </button>
+            <button id="btn-use-gps" title="Use precise GPS location" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 transition cursor-pointer">GPS</button>
+            <label class="flex items-center gap-1 text-[10px] text-slate-400 whitespace-nowrap" title="Forecast target drift">
+              <span>FORECAST</span><input id="forecast-hours" type="range" min="0" max="24" step="6" value="0" class="w-16 accent-cyan-400"><strong id="forecast-hours-value" class="text-cyan-300">0h</strong>
+            </label>
           </div>
         </div>
 
@@ -971,6 +972,8 @@ h1, h2, h3, h4, h5, h6, .font-heading {
             <span>Coords: <strong id="target-coords" class="text-cyan-300">14.1200° N, 73.8100° E</strong></span>
             <span>Depth: <strong id="target-depth" class="text-cyan-300">80m</strong></span>
             <span>Region: <strong id="target-region" class="text-cyan-300">Arabian Sea (AS)</strong></span>
+            <span>Risk Score: <strong id="target-risk-score" class="text-amber-300">--/100</strong></span>
+            <span>Forecast: <strong id="target-drift" class="text-cyan-300">Stationary</strong></span>
           </div>
         </div>
       </div>
@@ -982,6 +985,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
         </button>
         <button id="btn-download-csv" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 transition cursor-pointer">CSV</button>
         <button id="btn-download-json" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 transition cursor-pointer">JSON</button>
+        <button id="btn-create-mission" class="px-3 py-2 rounded-lg bg-amber-600/90 hover:bg-amber-500 text-white font-semibold shadow-md transition cursor-pointer">Create Mission</button>
       </div>
     </div>
 
@@ -997,7 +1001,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
           </div>
           <div>
             <h3 class="font-heading font-bold text-lg text-white">Sensor Spectral & Sonar Telemetry</h3>
-            <p class="text-xs text-cyan-300 font-mono">Target ID: Image #0241 • Depth: 80m</p>
+            <p id="sensor-target-meta" class="text-xs text-cyan-300 font-mono">Target ID: Image #0241 • Depth: 80m</p>
           </div>
         </div>
         <button id="btn-close-sensor-modal" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer">
@@ -1016,8 +1020,8 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 
         <div class="bg-slate-900/90 rounded-xl p-4 border border-slate-700">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-xs font-mono text-cyan-400 font-bold">Acoustic Sonar Cross-Section (Seabed Depth: 80m)</span>
-            <span class="text-[10px] font-mono text-emerald-400">High Density Echo @ 78.4m</span>
+            <span id="sensor-sonar-title" class="text-xs font-mono text-cyan-400 font-bold">Acoustic Sonar Cross-Section (Seabed Depth: 80m)</span>
+            <span id="sensor-echo-depth" class="text-[10px] font-mono text-emerald-400">High Density Echo @ 78.4m</span>
           </div>
           <canvas id="sonar-chart" class="w-full h-32"></canvas>
         </div>
@@ -1575,6 +1579,7 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit('initDemoTour', initDemoTour);
   safeInit('initBboxInteractions', initBboxInteractions);
   safeInit('initApiManager', initApiManager);
+  safeInit('initOperationsControls', initOperationsControls);
 
   safeInit('selectDefaultTarget', () => {
     selectTarget(oceanAnomalies[0]);
@@ -1764,12 +1769,98 @@ const OCEAN_LABELS = [
   { name: 'MEDITERRANEAN SEA', lat: 36.0, lng: 18.0 }
 ];
 
+const COUNTRY_CAPITALS = [
+  { country: 'USA', capital: 'Washington, D.C.', lat: 38.9072, lng: -77.0369 },
+  { country: 'Canada', capital: 'Ottawa', lat: 45.4215, lng: -75.6972 },
+  { country: 'Brazil', capital: 'Brasília', lat: -15.7939, lng: -47.8828 },
+  { country: 'United Kingdom', capital: 'London', lat: 51.5074, lng: -0.1278 },
+  { country: 'France', capital: 'Paris', lat: 48.8566, lng: 2.3522 },
+  { country: 'Germany', capital: 'Berlin', lat: 52.52, lng: 13.405 },
+  { country: 'Italy', capital: 'Rome', lat: 41.9028, lng: 12.4964 },
+  { country: 'Spain', capital: 'Madrid', lat: 40.4168, lng: -3.7038 },
+  { country: 'Nigeria', capital: 'Abuja', lat: 9.0765, lng: 7.3986 },
+  { country: 'South Africa', capital: 'Pretoria', lat: -25.7479, lng: 28.2293 },
+  { country: 'India', capital: 'New Delhi', lat: 28.6139, lng: 77.209 },
+  { country: 'China', capital: 'Beijing', lat: 39.9042, lng: 116.4074 },
+  { country: 'Japan', capital: 'Tokyo', lat: 35.6762, lng: 139.6503 },
+  { country: 'Indonesia', capital: 'Jakarta', lat: -6.2088, lng: 106.8456 },
+  { country: 'Australia', capital: 'Canberra', lat: -35.2809, lng: 149.13 },
+  { country: 'Saudi Arabia', capital: 'Riyadh', lat: 24.7136, lng: 46.6753 },
+  { country: 'Egypt', capital: 'Cairo', lat: 30.0444, lng: 31.2357 },
+  { country: 'Kenya', capital: 'Nairobi', lat: -1.2864, lng: 36.8172 },
+  { country: 'Russia', capital: 'Moscow', lat: 55.7558, lng: 37.6173 },
+  { country: 'Argentina', capital: 'Buenos Aires', lat: -34.6037, lng: -58.3816 },
+  { country: 'Mexico', capital: 'Mexico City', lat: 19.4326, lng: -99.1332 },
+  { country: 'Japan', capital: 'Tokyo', lat: 35.6762, lng: 139.6503 },
+  { country: 'Thailand', capital: 'Bangkok', lat: 13.7563, lng: 100.5018 },
+  { country: 'Philippines', capital: 'Manila', lat: 14.5995, lng: 120.9842 },
+  { country: 'United Arab Emirates', capital: 'Abu Dhabi', lat: 24.4539, lng: 54.3773 },
+  { country: 'Turkey', capital: 'Ankara', lat: 39.9334, lng: 32.8597 },
+  { country: 'Greece', capital: 'Athens', lat: 37.9838, lng: 23.7275 }
+];
+
 let mapViewportEl = null;
 let mapWorldEl = null;
+let leafletMap = null;
+let leafletDarkLayer = null;
+let leafletSatelliteLayer = null;
+let leafletTargetMarkers = [];
 let isDragging = false, dragMoved = false;
 let dragStartX = 0, dragStartY = 0, dragStartPanX = 0, dragStartPanY = 0;
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function calculateRiskScore(target) {
+  const typeWeight = target.type === 'ghostnet' ? 14 : target.type === 'debris' ? 9 : 5;
+  const latitudeWeight = Math.max(0, 12 - Math.abs(target.lat) * 0.12);
+  return Math.round(clamp(target.confidence * 0.68 + typeWeight + latitudeWeight, 0, 100));
+}
+
+function forecastTargetPosition(target, hours = 0) {
+  const speedKnots = target.type === 'ghostnet' ? 1.8 : target.type === 'debris' ? 1.2 : 0.8;
+  const bearing = 145 + Math.sin(target.lng * 0.05) * 35;
+  const distanceKm = speedKnots * hours * 1.852;
+  const lat = target.lat + (distanceKm * Math.cos(bearing * Math.PI / 180)) / 111;
+  const longitudeScale = Math.max(0.2, Math.cos(target.lat * Math.PI / 180));
+  const lng = target.lng + (distanceKm * Math.sin(bearing * Math.PI / 180)) / (111 * longitudeScale);
+  return { lat: clamp(lat, -85, 85), lng: ((lng + 180) % 360 + 360) % 360 - 180, speedKnots };
+}
+
+function updateTargetIntelligence(target) {
+  if (!target) return;
+  const scoreElement = document.getElementById('target-risk-score');
+  const driftElement = document.getElementById('target-drift');
+  const forecast = forecastTargetPosition(target, appState.forecastHours || 0);
+  if (scoreElement) scoreElement.textContent = `${calculateRiskScore(target)}/100`;
+  if (driftElement) {
+    const distance = Math.hypot((forecast.lat - target.lat) * 111, (forecast.lng - target.lng) * 111 * Math.cos(target.lat * Math.PI / 180));
+    driftElement.textContent = distance < 0.1 ? 'Stationary' : `+${distance.toFixed(1)} km`;
+  }
+}
+
+function createRecoveryMission(target) {
+  if (!target) return;
+  const forecast = forecastTargetPosition(target, appState.forecastHours || 0);
+  const mission = [
+    'QORVIA RECOVERY MISSION',
+    `Target: ${target.id}`,
+    `Classification: ${target.typeName}`,
+    `Priority: ${target.risk.toUpperCase()}`,
+    `Risk score: ${calculateRiskScore(target)}/100`,
+    `Current coordinates: ${target.lat.toFixed(6)}, ${target.lng.toFixed(6)}`,
+    `Forecast coordinates (+${appState.forecastHours || 0}h): ${forecast.lat.toFixed(6)}, ${forecast.lng.toFixed(6)}`,
+    `Depth: ${target.depth}`,
+    `Estimated mass: ${target.mass}`,
+    `Recommended sensor: ${target.sensor}`,
+    `Generated: ${new Date().toISOString()}`
+  ].join('\n');
+  const objectUrl = URL.createObjectURL(new Blob([mission], { type: 'text/plain' }));
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = `Qorvia_Mission_${target.id}.txt`;
+  link.click();
+  URL.revokeObjectURL(objectUrl);
+}
 
 function applyMapTransform() {
   const me = appState.mapEngine;
@@ -1796,8 +1887,8 @@ function screenToLatLng(sx, sy) {
 function updateCoordHUD(lat, lng) {
   const latElem = document.getElementById('coord-lat');
   const lngElem = document.getElementById('coord-lng');
-  if (latElem) latElem.textContent = `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}`;
-  if (lngElem) lngElem.textContent = `${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'E' : 'W'}`;
+  if (latElem) latElem.textContent = `${Math.abs(lat).toFixed(6)}° ${lat >= 0 ? 'N' : 'S'}`;
+  if (lngElem) lngElem.textContent = `${Math.abs(lng).toFixed(6)}° ${lng >= 0 ? 'E' : 'W'}`;
 }
 
 function initMap() {
@@ -1806,21 +1897,35 @@ function initMap() {
 
   mapViewportEl.innerHTML = `
     <div class="qorvia-map-bg"></div>
+    <div id="leaflet-map" class="qorvia-leaflet-map"></div>
     <div id="map-world" class="qorvia-map-world"></div>
   `;
   mapWorldEl = document.getElementById('map-world');
+  mapWorldEl.style.display = 'none';
+
+  leafletMap = L.map('leaflet-map', { zoomControl: false, worldCopyJump: true, minZoom: 1, maxZoom: 18 }).setView([10, 0], 1);
+  leafletDarkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 18, attribution: '&copy; OpenStreetMap &copy; CARTO'
+  }).addTo(leafletMap);
+  leafletSatelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18, attribution: '&copy; Esri'
+  });
+  leafletMap.on('mousemove', (e) => updateCoordHUD(e.latlng.lat, e.latlng.lng));
+  leafletMap.on('click', (e) => { soundFx.playSonarPing(); fetchLiveMarineData(e.latlng.lat, e.latlng.lng); });
 
   layoutMap(true);
   appState.mapReady = true;
 
   // --- Drag to pan ---
   mapViewportEl.addEventListener('mousedown', (e) => {
+    if (leafletMap) return;
     isDragging = true; dragMoved = false;
     dragStartX = e.clientX; dragStartY = e.clientY;
     dragStartPanX = appState.mapEngine.panX; dragStartPanY = appState.mapEngine.panY;
     mapViewportEl.classList.add('qorvia-dragging');
   });
   window.addEventListener('mousemove', (e) => {
+    if (leafletMap) return;
     const rect = mapViewportEl.getBoundingClientRect();
     if (isDragging) {
       const dx = e.clientX - dragStartX, dy = e.clientY - dragStartY;
@@ -1842,12 +1947,14 @@ function initMap() {
 
   // Touch support (basic drag)
   mapViewportEl.addEventListener('touchstart', (e) => {
+    if (leafletMap) return;
     const t = e.touches[0];
     isDragging = true; dragMoved = false;
     dragStartX = t.clientX; dragStartY = t.clientY;
     dragStartPanX = appState.mapEngine.panX; dragStartPanY = appState.mapEngine.panY;
   }, { passive: true });
   mapViewportEl.addEventListener('touchmove', (e) => {
+    if (leafletMap) return;
     if (!isDragging) return;
     const t = e.touches[0];
     const dx = t.clientX - dragStartX, dy = t.clientY - dragStartY;
@@ -1860,6 +1967,7 @@ function initMap() {
 
   // --- Click on empty water = fetch telemetry at that point ---
   mapViewportEl.addEventListener('click', (e) => {
+    if (leafletMap) return;
     if (dragMoved) { dragMoved = false; return; }
     if (e.target.closest('.qorvia-marker')) return; // marker handles its own click
     const rect = mapViewportEl.getBoundingClientRect();
@@ -1870,6 +1978,7 @@ function initMap() {
 
   // --- Wheel to zoom (centered on cursor) ---
   mapViewportEl.addEventListener('wheel', (e) => {
+    if (leafletMap) return;
     e.preventDefault();
     const rect = mapViewportEl.getBoundingClientRect();
     const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
@@ -1881,11 +1990,11 @@ function initMap() {
   const btnZoomOut = document.getElementById('btn-zoom-out');
   if (btnZoomIn) btnZoomIn.addEventListener('click', () => {
     soundFx.playSonarPing();
-    zoomAt(mapViewportEl.clientWidth / 2, mapViewportEl.clientHeight / 2, 1.5);
+    leafletMap.zoomIn();
   });
   if (btnZoomOut) btnZoomOut.addEventListener('click', () => {
     soundFx.playSonarPing();
-    zoomAt(mapViewportEl.clientWidth / 2, mapViewportEl.clientHeight / 2, 1 / 1.5);
+    leafletMap.zoomOut();
   });
 
   // --- Region jump buttons ---
@@ -1896,6 +2005,7 @@ function initMap() {
       const lng = parseFloat(btn.dataset.lng);
       const targetScale = parseFloat(btn.dataset.scale);
       flyTo(lat, lng, targetScale);
+      leafletMap.setView([lat, lng], Math.max(1, Math.round(Math.log2(targetScale) + 1)), { animate: true });
       fetchLiveMarineData(lat, lng);
     });
   });
@@ -1909,18 +2019,46 @@ function initMap() {
       if (appState.basemapMode === 'dark') {
         appState.basemapMode = 'satellite';
         mapViewportEl.classList.add('satellite-theme-on');
+        leafletMap.removeLayer(leafletDarkLayer);
+        leafletSatelliteLayer.addTo(leafletMap);
         basemapText.textContent = 'Satellite Theme: ON';
         btnToggleBasemap.classList.add('bg-cyan-900/60', 'border-cyan-400');
       } else {
         appState.basemapMode = 'dark';
         mapViewportEl.classList.remove('satellite-theme-on');
+        leafletMap.removeLayer(leafletSatelliteLayer);
+        leafletDarkLayer.addTo(leafletMap);
         basemapText.textContent = 'Satellite Theme: OFF';
         btnToggleBasemap.classList.remove('bg-cyan-900/60', 'border-cyan-400');
       }
     });
   }
 
+  const btnUseGps = document.getElementById('btn-use-gps');
+  if (btnUseGps) {
+    btnUseGps.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        updateCoordHUD(0, 0);
+        alert('GPS is not available in this browser.');
+        return;
+      }
+      btnUseGps.textContent = 'GPS ...';
+      navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        updateCoordHUD(latitude, longitude);
+        flyTo(latitude, longitude, 9);
+        leafletMap.setView([latitude, longitude], 10, { animate: true });
+        fetchLiveMarineData(latitude, longitude);
+        btnUseGps.textContent = `GPS ±${Math.round(accuracy)}m`;
+      }, () => {
+        btnUseGps.textContent = 'GPS';
+        alert('Unable to read GPS. Allow location access and try again.');
+      }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+    });
+  }
+
   window.addEventListener('resize', () => { layoutMap(false); });
+  setTimeout(() => leafletMap.invalidateSize(), 0);
 
   renderMapAnomalies();
   updateZoomDependentTemp();
@@ -1967,6 +2105,22 @@ function renderOceanLabels() {
   });
 }
 
+function renderCountryCapitalLabels() {
+  document.querySelectorAll('.qorvia-country-label').forEach(el => el.remove());
+
+  COUNTRY_CAPITALS.forEach(item => {
+    const { x, y } = projectPx(item.lat, item.lng);
+    const el = document.createElement('div');
+    el.className = 'qorvia-country-label';
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    el.title = `${item.country}: ${item.capital} (${item.lat.toFixed(4)}, ${item.lng.toFixed(4)})`;
+    el.innerHTML = '<span class="country-dot"></span><span class="country-text">' + item.country + ' - ' + item.capital + '</span>';
+    mapWorldEl.appendChild(el);
+    el.classList.add('visible');
+  });
+}
+
 function zoomAt(sx, sy, factor) {
   const me = appState.mapEngine;
   const { lx, ly } = screenToWorldPx(sx, sy);
@@ -1986,6 +2140,8 @@ function flyTo(lat, lng, targetScale) {
   const targetPanX = rect.width / 2 - x * newScale;
   const targetPanY = rect.height / 2 - y * newScale;
 
+  if (leafletMap) leafletMap.setView([lat, lng], Math.max(1, Math.round(Math.log2(newScale) + 1)), { animate: true });
+
   mapWorldEl.classList.add('animated-fly');
   me.scale = newScale; me.panX = targetPanX; me.panY = targetPanY;
   applyMapTransform();
@@ -2004,6 +2160,9 @@ function updateMarkerCounterScale() {
     m.style.transform = `translate(-50%, -50%) scale(${inv})`;
   });
   document.querySelectorAll('.qorvia-ocean-label').forEach(el => {
+    el.style.transform = `translate(-50%, -50%) scale(${inv})`;
+  });
+  document.querySelectorAll('.qorvia-country-label').forEach(el => {
     el.style.transform = `translate(-50%, -50%) scale(${inv})`;
   });
 }
@@ -2033,29 +2192,7 @@ function clearRiskRings() {
 // Ring count: high = 4, medium = 3, low = 2. Rings are NOT counter-scaled,
 // so they visibly grow bigger the further the user zooms in.
 function drawRiskRings(anomaly, riskColor) {
-  const scale = appState.mapEngine.scale;
-  const ringCounts = { high: 4, med: 3, low: 2 };
-  const count = ringCounts[anomaly.risk] || 2;
-  const zoomFactor = 1 + (scale - RING_MIN_SCALE) * 0.35;
-  const baseDiameterPx = (anomaly.risk === 'high' ? 34 : anomaly.risk === 'med' ? 26 : 18) * zoomFactor;
-  const { x, y } = projectPx(anomaly.lat, anomaly.lng);
-
-  for (let i = 1; i <= count; i++) {
-    const d = baseDiameterPx * i * 0.9;
-    const ring = document.createElement('div');
-    ring.className = 'qorvia-ring';
-    ring.style.left = `${x}px`;
-    ring.style.top = `${y}px`;
-    ring.style.width = `${d}px`;
-    ring.style.height = `${d}px`;
-    ring.style.marginLeft = `${-d / 2}px`;
-    ring.style.marginTop = `${-d / 2}px`;
-    ring.style.borderColor = riskColor;
-    ring.style.borderWidth = '1.6px';
-    ring.style.opacity = Math.max(0.2, 0.9 - i * 0.14);
-    mapWorldEl.appendChild(ring);
-    appState.ringEls.push(ring);
-  }
+  return;
 }
 
 function refreshRiskRings() {
@@ -2070,6 +2207,8 @@ function refreshRiskRings() {
 function renderMapAnomalies() {
   if (!mapWorldEl) return;
 
+  leafletTargetMarkers.forEach(marker => marker.remove());
+  leafletTargetMarkers = [];
   appState.markerEls.forEach(m => m.remove());
   appState.heatEls.forEach(h => h.remove());
   appState.markerEls = [];
@@ -2094,23 +2233,14 @@ function renderMapAnomalies() {
 
     const { x, y } = projectPx(anomaly.lat, anomaly.lng);
 
-    // Always-visible translucent heat blob (grows with zoom, like the rings)
-    const heatDiameter = anomaly.risk === 'high' ? 60 : 40;
-    const heat = document.createElement('div');
-    heat.className = 'qorvia-ring';
-    heat.style.animation = 'none';
-    heat.style.left = `${x}px`;
-    heat.style.top = `${y}px`;
-    heat.style.width = `${heatDiameter}px`;
-    heat.style.height = `${heatDiameter}px`;
-    heat.style.marginLeft = `${-heatDiameter / 2}px`;
-    heat.style.marginTop = `${-heatDiameter / 2}px`;
-    heat.style.borderWidth = '1px';
-    heat.style.borderColor = riskColor;
-    heat.style.background = riskColor;
-    heat.style.opacity = anomaly.risk === 'high' ? '0.28' : '0.16';
-    mapWorldEl.appendChild(heat);
-    appState.heatEls.push(heat);
+    const forecast = forecastTargetPosition(anomaly, appState.forecastHours || 0);
+    const leafletMarker = L.marker([forecast.lat, forecast.lng]).addTo(leafletMap);
+    leafletMarker.bindPopup(`<strong>${anomaly.name}</strong><br>Risk: ${anomaly.risk.toUpperCase()} (${anomaly.confidence}%)<br>Depth: ${anomaly.depth}<br>Coordinates: ${forecast.lat.toFixed(6)}, ${forecast.lng.toFixed(6)}`);
+    leafletMarker.on('click', () => {
+      selectTarget(anomaly);
+      fetchLiveMarineData(anomaly.lat, anomaly.lng);
+    });
+    leafletTargetMarkers.push(leafletMarker);
 
     // Marker dot with hover tooltip
     const marker = document.createElement('div');
@@ -2150,6 +2280,7 @@ function selectTarget(target) {
   if (targetCoords) targetCoords.textContent = `${target.lat.toFixed(4)}°, ${target.lng.toFixed(4)}°`;
   if (targetDepth) targetDepth.textContent = target.depth;
   if (targetRegion) targetRegion.textContent = target.regionName;
+  updateTargetIntelligence(target);
 
   if (targetBadge) {
     targetBadge.textContent = `RISK: ${target.risk.toUpperCase()} (${target.confidence}%)`;
@@ -2159,6 +2290,22 @@ function selectTarget(target) {
   }
 
   drawAnalysisCanvas(target.sampleImage);
+}
+
+function initOperationsControls() {
+  appState.forecastHours = 0;
+  const forecastSlider = document.getElementById('forecast-hours');
+  const forecastValue = document.getElementById('forecast-hours-value');
+  if (forecastSlider) {
+    forecastSlider.addEventListener('input', (event) => {
+      appState.forecastHours = Number(event.target.value);
+      if (forecastValue) forecastValue.textContent = `${appState.forecastHours}h`;
+      renderMapAnomalies();
+      updateTargetIntelligence(appState.activeTarget);
+    });
+  }
+  const missionButton = document.getElementById('btn-create-mission');
+  if (missionButton) missionButton.addEventListener('click', () => createRecoveryMission(appState.activeTarget));
 }
 
 /* ==========================================================================
@@ -2425,6 +2572,20 @@ function initMagnifier() {
 
   if (!btnMagnifier || !lens || !mapElem) return;
 
+  const lensSize = 170;
+
+  const buildLensClone = () => {
+    const clone = mapWorldEl.cloneNode(true);
+    clone.classList.add('magnified-map-clone');
+    clone.style.width = `${mapWorldEl.offsetWidth}px`;
+    clone.style.height = `${mapWorldEl.offsetHeight}px`;
+    clone.style.pointerEvents = 'none';
+    clone.style.opacity = '1';
+    clone.style.left = '0px';
+    clone.style.top = '0px';
+    return clone;
+  };
+
   btnMagnifier.addEventListener('click', () => {
     soundFx.playSonarPing();
     appState.magnifierActive = !appState.magnifierActive;
@@ -2433,8 +2594,11 @@ function initMagnifier() {
       btnMagnifier.classList.add('bg-cyan-600', 'text-white', 'border-cyan-400');
       btnText.textContent = 'Magnifier Loupe: ON';
       mapElem.style.cursor = 'crosshair';
+      lens.innerHTML = '';
+      lens.appendChild(buildLensClone());
     } else {
       lens.style.display = 'none';
+      lens.innerHTML = '';
       btnMagnifier.classList.remove('bg-cyan-600', 'text-white', 'border-cyan-400');
       btnText.textContent = 'Magnifier Loupe: OFF';
       mapElem.style.cursor = '';
@@ -2446,8 +2610,17 @@ function initMagnifier() {
     const rect = mapElem.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    lens.style.left = `${x - 85}px`;
-    lens.style.top = `${y - 85}px`;
+    lens.style.left = `${x - lensSize / 2}px`;
+    lens.style.top = `${y - lensSize / 2}px`;
+
+    const clone = lens.querySelector('.magnified-map-clone');
+    if (!clone || !mapWorldEl) return;
+
+    const { lx, ly } = screenToWorldPx(x, y);
+    const zoom = 2.2;
+    const offsetX = -(lx * zoom) + (lensSize / 2);
+    const offsetY = -(ly * zoom) + (lensSize / 2);
+    clone.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
   });
 
   mapElem.addEventListener('mouseleave', () => { if (appState.magnifierActive) lens.style.display = 'none'; });
@@ -2656,7 +2829,6 @@ function initHamburgerMenu() {
   const backdrop = document.getElementById('hamburger-backdrop');
   const drawer = document.getElementById('hamburger-drawer');
   const menu = document.getElementById('hamburger-menu');
-
   function openHamburger() {
     soundFx.playSonarPing();
     menu.classList.remove('pointer-events-none');
@@ -2785,8 +2957,21 @@ function initTelemetryModal() {
 
 function openSensorModal(target) {
   const modal = document.getElementById('sensor-modal');
+  if (!target) return;
+
+  const depthRaw = String(target.depth || '80m').replace(/[^0-9.]/g, '') || '80';
+  const depthValue = Number(depthRaw) || 80;
+  const modalLabel = document.getElementById('sensor-target-meta');
+  const modalSonarTitle = document.getElementById('sensor-sonar-title');
+  const modalSonarMarker = document.getElementById('sensor-echo-depth');
+
+  const echoDepth = Number((depthValue * 0.98).toFixed(1));
+  if (modalLabel) modalLabel.textContent = `Target ID: ${target.id} • Depth: ${target.depth}`;
+  if (modalSonarTitle) modalSonarTitle.textContent = `Acoustic Sonar Cross-Section (Seabed Depth: ${target.depth})`;
+  if (modalSonarMarker) modalSonarMarker.textContent = `High Density Echo @ ${echoDepth}m`;
+
   modal.classList.remove('hidden');
-  setTimeout(() => { drawSpectralChart(); drawSonarChart(); }, 100);
+  setTimeout(() => { drawSpectralChart(); drawSonarChart(depthValue); }, 100);
 }
 
 /* ==========================================================================
@@ -2861,7 +3046,7 @@ function drawSpectralChart() {
   ctx.fillStyle = '#f87171'; ctx.fillText('Polyamide Absorption Peak (1215nm)', w * 0.52, 65);
 }
 
-function drawSonarChart() {
+function drawSonarChart(depthValue = 80) {
   const canvas = document.getElementById('sonar-chart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -2870,10 +3055,14 @@ function drawSonarChart() {
   canvas.width = w; canvas.height = h;
   ctx.clearRect(0, 0, w, h);
 
+  const targetDepth = Number(depthValue) || 80;
+  const yTarget = 110 - ((targetDepth / 120) * 80);
+  const yTargetLabel = Math.min(Math.max(yTarget, 25), 100);
+
   ctx.fillStyle = '#64748b'; ctx.font = '10px "IBM Plex Mono", monospace';
   ctx.fillText('0m (Surface)', 10, 18);
   ctx.fillText('40m', 10, 55);
-  ctx.fillText('80m (Target)', 10, 90);
+  ctx.fillText(`${targetDepth}m (Target)`, 10, yTargetLabel);
   ctx.fillText('120m (Seabed)', 10, 115);
 
   ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.moveTo(90, 110);
@@ -2881,10 +3070,10 @@ function drawSonarChart() {
   ctx.lineTo(w, h); ctx.lineTo(90, h); ctx.closePath(); ctx.fill();
 
   ctx.strokeStyle = '#ef4444'; ctx.fillStyle = 'rgba(239, 68, 68, 0.3)'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.ellipse(w * 0.55, 82, 35, 12, 0, 0, Math.PI * 2); ctx.stroke(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(w * 0.55, yTarget, 35, 12, 0, 0, Math.PI * 2); ctx.stroke(); ctx.fill();
 
   ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)'; ctx.setLineDash([4, 4]);
-  ctx.beginPath(); ctx.moveTo(w * 0.55, 10); ctx.lineTo(w * 0.55, 70); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(w * 0.55, 10); ctx.lineTo(w * 0.55, yTarget + 12); ctx.stroke(); ctx.setLineDash([]);
 }
 
 /* ==========================================================================

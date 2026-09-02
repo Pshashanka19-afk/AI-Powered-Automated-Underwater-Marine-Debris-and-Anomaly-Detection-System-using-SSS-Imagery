@@ -770,19 +770,29 @@ function clearRiskRings() {
   appState.ringEls = [];
 }
 
+function getMapOverlayScaleFactor() {
+  const scale = appState.mapEngine.scale;
+  if (scale < 2) return 0.48;
+  if (scale < 4) return 0.7;
+  if (scale < 8) return 0.88;
+  return 1;
+}
+
 // Draws N concentric "danger" rings around a high/med/low risk target.
-// Ring count: high = 4, medium = 3, low = 2. Rings are NOT counter-scaled,
-// so they visibly grow bigger the further the user zooms in.
+// The original issue was visual clutter when many Indian Ocean anomalies were
+// clustered together at world overview zoom. These ring sizes are now scaled
+// down at low zoom levels and capped to avoid a dense overlapping mess.
 function drawRiskRings(anomaly, riskColor) {
   const scale = appState.mapEngine.scale;
   const ringCounts = { high: 4, med: 3, low: 2 };
-  const count = ringCounts[anomaly.risk] || 2;
-  const zoomFactor = 1 + (scale - RING_MIN_SCALE) * 0.35;
-  const baseDiameterPx = (anomaly.risk === 'high' ? 34 : anomaly.risk === 'med' ? 26 : 18) * zoomFactor;
+  const count = scale < 5 ? Math.min(2, ringCounts[anomaly.risk] || 2) : ringCounts[anomaly.risk] || 2;
+  const overlayFactor = getMapOverlayScaleFactor();
+  const zoomFactor = 1 + Math.max(0, scale - RING_MIN_SCALE) * 0.2;
+  const baseDiameterPx = (anomaly.risk === 'high' ? 22 : anomaly.risk === 'med' ? 18 : 14) * zoomFactor * overlayFactor;
   const { x, y } = projectPx(anomaly.lat, anomaly.lng);
 
   for (let i = 1; i <= count; i++) {
-    const d = baseDiameterPx * i * 0.9;
+    const d = baseDiameterPx * i * 0.95;
     const ring = document.createElement('div');
     ring.className = 'qorvia-ring';
     ring.style.left = `${x}px`;
@@ -792,8 +802,8 @@ function drawRiskRings(anomaly, riskColor) {
     ring.style.marginLeft = `${-d / 2}px`;
     ring.style.marginTop = `${-d / 2}px`;
     ring.style.borderColor = riskColor;
-    ring.style.borderWidth = '1.6px';
-    ring.style.opacity = Math.max(0.2, 0.9 - i * 0.14);
+    ring.style.borderWidth = '1.2px';
+    ring.style.opacity = Math.max(0.12, 0.7 - i * 0.12);
     mapWorldEl.appendChild(ring);
     appState.ringEls.push(ring);
   }
@@ -827,6 +837,7 @@ function renderMapAnomalies() {
   appState.visibleAnomalies = visibleAnomalies;
 
   const inv = 1 / appState.mapEngine.scale;
+  const overlayFactor = getMapOverlayScaleFactor();
 
   visibleAnomalies.forEach(anomaly => {
     let riskColor = '#10b981';
@@ -835,8 +846,10 @@ function renderMapAnomalies() {
 
     const { x, y } = projectPx(anomaly.lat, anomaly.lng);
 
-    // Always-visible translucent heat blob (grows with zoom, like the rings)
-    const heatDiameter = anomaly.risk === 'high' ? 60 : 40;
+    // Always-visible translucent heat blob. At world overview the overlay is
+    // intentionally subtler to prevent dense Indian Ocean clusters from turning
+    // into a solid red/yellow wall.
+    const heatDiameter = (anomaly.risk === 'high' ? 42 : anomaly.risk === 'med' ? 30 : 22) * overlayFactor;
     const heat = document.createElement('div');
     heat.className = 'qorvia-ring';
     heat.style.animation = 'none';
@@ -849,7 +862,7 @@ function renderMapAnomalies() {
     heat.style.borderWidth = '1px';
     heat.style.borderColor = riskColor;
     heat.style.background = riskColor;
-    heat.style.opacity = anomaly.risk === 'high' ? '0.28' : '0.16';
+    heat.style.opacity = anomaly.risk === 'high' ? (appState.mapEngine.scale < 3 ? '0.12' : '0.2') : (appState.mapEngine.scale < 3 ? '0.08' : '0.14');
     mapWorldEl.appendChild(heat);
     appState.heatEls.push(heat);
 

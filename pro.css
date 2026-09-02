@@ -210,15 +210,23 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   display: none;
   z-index: 1000;
   overflow: hidden;
-  background-repeat: no-repeat;
-  backdrop-filter: brightness(1.2) contrast(1.1);
+  background: rgba(8, 15, 25, 0.7);
+  backdrop-filter: blur(2px) saturate(1.2);
 }
 .magnifier-crosshair {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to right, transparent calc(50% - 0.5px), rgba(0, 240, 255, 0.6) 50%, transparent calc(50% + 0.5px)),
-    linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(0, 240, 255, 0.6) 50%, transparent calc(50% + 0.5px));
+    linear-gradient(to right, transparent calc(50% - 0.5px), rgba(0, 240, 255, 0.7) 50%, transparent calc(50% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(0, 240, 255, 0.7) 50%, transparent calc(50% + 0.5px));
+}
+.magnifier-lens .magnified-map-clone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  transform-origin: 0 0;
+  filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.18));
 }
 
 /* Heatmap & Risk Pulsers (used for base marker dot, not the zoom-rings) */
@@ -264,22 +272,6 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .ai-bbox-high { border-color: #ef4444; background: rgba(239, 68, 68, 0.18); box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
 .ai-bbox-med { border-color: #f59e0b; background: rgba(245, 158, 11, 0.18); box-shadow: 0 0 12px rgba(245, 158, 11, 0.3); }
 .ai-bbox-low { border-color: #10b981; background: rgba(16, 185, 129, 0.18); box-shadow: 0 0 10px rgba(16, 185, 129, 0.25); }
-
-/* Leaflet styling */
-.leaflet-container { background: #050b14 !important; font-family: var(--font-body) !important; }
-.light-theme .leaflet-container { background: #e2e8f0 !important; }
-
-.leaflet-popup-content-wrapper {
-  background: var(--bg-secondary) !important;
-  color: var(--text-main) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
-  padding: 0 !important;
-  overflow: hidden;
-}
-.leaflet-popup-tip { background: var(--bg-secondary) !important; border: 1px solid var(--border-color) !important; }
-.leaflet-popup-content { margin: 0 !important; line-height: 1.4 !important; }
 
 /* Custom button hover glow */
 .btn-glow { transition: all 0.25s ease; }
@@ -344,9 +336,13 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 }
 .satellite-theme-on .qorvia-map-bg {
   background:
-    repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 42px),
-    repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 42px),
-    radial-gradient(ellipse at 50% 50%, #1c4a24 0%, #0e2a13 45%, #081c0c 75%, #051007 100%);
+    linear-gradient(rgba(10, 19, 28, 0.18), rgba(10, 19, 28, 0.22)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 18px),
+    repeating-linear-gradient(90deg, rgba(0, 240, 255, 0.08) 0px, rgba(0, 240, 255, 0.08) 1px, transparent 1px, transparent 20px),
+    radial-gradient(ellipse at 50% 50%, #4aa269 0%, #234d2c 24%, #163721 43%, #0b1d12 72%, #08130d 100%);
+}
+.satellite-theme-on .qorvia-world-svg {
+  filter: saturate(1.4) contrast(1.15) brightness(1.08);
 }
 
 .qorvia-continent {
@@ -356,8 +352,8 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   transition: fill 0.4s ease, stroke 0.4s ease;
 }
 .satellite-theme-on .qorvia-continent {
-  fill: #3d6b34;
-  stroke: rgba(255, 214, 120, 0.55);
+  fill: #4b7d3b;
+  stroke: rgba(255, 214, 120, 0.6);
   stroke-width: 1.6;
 }
 
@@ -418,6 +414,33 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   white-space: nowrap;
 }
 .satellite-theme-on .qorvia-capital-text { color: #fff7d6; }
+
+.qorvia-country-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  pointer-events: none;
+  z-index: 17;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+.qorvia-country-label.visible { opacity: 1; }
+.qorvia-country-label .country-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #7dd3fc;
+  box-shadow: 0 0 6px rgba(125, 211, 252, 0.7);
+}
+.qorvia-country-label .country-text {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(191, 219, 254, 0.9);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
 
 /* Marker dot — counter-scaled in JS so it stays a constant on-screen size
    regardless of zoom, exactly like a normal map pin */
