@@ -1,0 +1,544 @@
+/* Import Google Fonts: Space Grotesk, Manrope, IBM Plex Mono */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-heading: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* Dark Theme (Default) */
+  --bg-primary: #070d18;
+  --bg-secondary: #0c172a;
+  --bg-card: rgba(14, 25, 45, 0.88);
+  --bg-card-hover: rgba(20, 36, 65, 0.95);
+  --border-color: rgba(56, 189, 248, 0.2);
+  --border-glow: rgba(56, 189, 248, 0.5);
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --accent-cyan: #00f0ff;
+  --accent-blue: #0284c7;
+  --accent-green: #10b981;
+  --accent-yellow: #f59e0b;
+  --accent-red: #ef4444;
+
+  --radar-sweep: rgba(0, 240, 255, 0.15);
+
+  /* Equal-height panels used for Add Files + Ocean Map (stacked column layout) */
+  --panel-height: 640px;
+}
+
+.light-theme {
+  /* "Clean & Modern" palette */
+  --bg-primary: #F8FAFC;      /* Main UI */
+  --bg-secondary: #FFFFFF;    /* Sidebar */
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F1F5F9;   /* Active item */
+  --border-color: #E2E8F0;    /* Borders */
+  --border-glow: #2563EB;     /* Accent, used for focus/hover glow */
+
+  --text-main: #0F172A;       /* Primary text */
+  --text-muted: #475569;      /* Sidebar text */
+  --text-dim: #64748B;        /* Muted text */
+
+  --accent-cyan: #2563EB;     /* Accent */
+  --accent-blue: #2563EB;     /* Accent */
+  --accent-green: #16A34A;    /* Success */
+  --accent-yellow: #D97706;
+  --accent-red: #DC2626;      /* Error */
+
+  --radar-sweep: rgba(37, 99, 235, 0.10);
+
+  /* Extra tokens used only by the scoped overrides below */
+  --lt-active: #F1F5F9;
+  --lt-sidebar-text: #475569;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.15s ease;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+.font-mono, .telemetry-val, .coord-badge, code, pre {
+  font-family: var(--font-mono);
+}
+
+/* Glassmorphism */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+}
+
+.glass-panel:hover {
+  border-color: var(--border-glow);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
+
+/* ==========================================================================
+   SPLASH SCREEN
+   ========================================================================== */
+#splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: radial-gradient(circle at center, #0c1c38 0%, #030712 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+}
+
+.sonar-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--accent-cyan);
+  opacity: 0;
+  animation: sonarWave 3s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+}
+.sonar-ring:nth-child(2) { animation-delay: 0.8s; }
+.sonar-ring:nth-child(3) { animation-delay: 1.6s; }
+
+@keyframes sonarWave {
+  0% { width: 60px; height: 60px; opacity: 0.9; transform: scale(0.6); }
+  100% { width: 420px; height: 420px; opacity: 0; transform: scale(1.6); }
+}
+
+/* Splash logo — exactly 2cm x 2cm, centered */
+#splash-logo-img {
+  width: 2cm;
+  height: 2cm;
+  display: block;
+  margin: 0 auto;
+  border-radius: 50%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 22px rgba(0, 240, 255, 0.65));
+  animation: pulseGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes pulseGlow {
+  0% { filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.4)); transform: scale(0.98); }
+  100% { filter: drop-shadow(0 0 30px rgba(0, 240, 255, 0.85)); transform: scale(1.02); }
+}
+
+/* QORVIA wordmark — letters are individually spanned so the tagline can be
+   aligned exactly under the "R" via JS (see alignTaglineToR in app.js) */
+.qorvia-wordmark {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 2.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: transparent;
+  background: linear-gradient(90deg, #a5f3ff, #38bdf8, #0284c7);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.qorvia-wordmark span { display: inline-block; }
+
+#splash-title-container { position: relative; display: inline-block; text-align: center; }
+
+#splash-tagline {
+  position: absolute;
+  top: 100%;
+  margin-top: 10px;
+  white-space: nowrap;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: #cffafe;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+#splash-tagline.visible { opacity: 1; transform: translateY(0); }
+
+.radar-sweep-scanner { position: relative; overflow: hidden; border-radius: 50%; }
+.radar-sweep-scanner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(from 0deg, transparent 70%, rgba(0, 240, 255, 0.4) 100%);
+  border-radius: 50%;
+  animation: sweepRotate 2.5s linear infinite;
+}
+@keyframes sweepRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ==========================================================================
+   STACKED EQUAL-SIZE PANELS (Add Files + Ocean Map)
+   ========================================================================== */
+.equal-panel {
+  width: 100%;
+  height: var(--panel-height);
+}
+
+/* Map Magnifier Lens */
+.magnifier-lens {
+  position: absolute;
+  width: 170px;
+  height: 170px;
+  border: 3px solid var(--accent-cyan);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.6), inset 0 0 30px rgba(0, 240, 255, 0.25);
+  display: none;
+  z-index: 1000;
+  overflow: hidden;
+  background-repeat: no-repeat;
+  backdrop-filter: brightness(1.2) contrast(1.1);
+}
+.magnifier-crosshair {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, transparent calc(50% - 0.5px), rgba(0, 240, 255, 0.6) 50%, transparent calc(50% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(0, 240, 255, 0.6) 50%, transparent calc(50% + 0.5px));
+}
+
+/* Heatmap & Risk Pulsers (used for base marker dot, not the zoom-rings) */
+.risk-pulse-high { position: relative; }
+.risk-pulse-high::before {
+  content: ''; position: absolute; inset: -6px; border-radius: 50%;
+  background: rgba(239, 68, 68, 0.5); animation: markerPulse 1.8s infinite;
+}
+.risk-pulse-med::before {
+  content: ''; position: absolute; inset: -5px; border-radius: 50%;
+  background: rgba(245, 158, 11, 0.5); animation: markerPulse 2.2s infinite;
+}
+.risk-pulse-low::before {
+  content: ''; position: absolute; inset: -4px; border-radius: 50%;
+  background: rgba(16, 185, 129, 0.5); animation: markerPulse 2.6s infinite;
+}
+@keyframes markerPulse {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  70% { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+
+/* Concentric zoom-triggered danger rings (drawn as Leaflet SVG circles;
+   this class only styles the pulsing animation used on the DOM marker dot) */
+.ring-pulse { animation: ringPulse 2.4s ease-out infinite; }
+@keyframes ringPulse {
+  0% { stroke-opacity: 0.9; }
+  50% { stroke-opacity: 0.25; }
+  100% { stroke-opacity: 0.9; }
+}
+
+/* Progress bar shimmer */
+.shimmer-progress {
+  background: linear-gradient(90deg, #0284c7 0%, #00f0ff 50%, #0284c7 100%);
+  background-size: 200% 100%;
+  animation: shimmerMove 1.5s infinite;
+}
+@keyframes shimmerMove { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+/* Bounding Box on Preview Image */
+.ai-bbox { position: absolute; border: 2px solid; border-radius: 4px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.ai-bbox:hover { transform: scale(1.02); z-index: 30; }
+.ai-bbox-high { border-color: #ef4444; background: rgba(239, 68, 68, 0.18); box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+.ai-bbox-med { border-color: #f59e0b; background: rgba(245, 158, 11, 0.18); box-shadow: 0 0 12px rgba(245, 158, 11, 0.3); }
+.ai-bbox-low { border-color: #10b981; background: rgba(16, 185, 129, 0.18); box-shadow: 0 0 10px rgba(16, 185, 129, 0.25); }
+
+/* Leaflet styling */
+.leaflet-container { background: #050b14 !important; font-family: var(--font-body) !important; }
+.light-theme .leaflet-container { background: #e2e8f0 !important; }
+
+.leaflet-popup-content-wrapper {
+  background: var(--bg-secondary) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+.leaflet-popup-tip { background: var(--bg-secondary) !important; border: 1px solid var(--border-color) !important; }
+.leaflet-popup-content { margin: 0 !important; line-height: 1.4 !important; }
+
+/* Custom button hover glow */
+.btn-glow { transition: all 0.25s ease; }
+.btn-glow:hover { transform: translateY(-1px); box-shadow: 0 0 18px rgba(0, 240, 255, 0.4); }
+
+/* Compass + Filter cluster (top-left of map) */
+.compass-badge {
+  background: rgba(12, 23, 42, 0.85);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(8px);
+}
+
+/* Menu (hamburger) button — floating on the LEFT edge of the map, vertically centered */
+#btn-hamburger {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 25;
+}
+#btn-hamburger:hover { transform: translateY(-50%) scale(1.05); }
+
+/* Decorative animated wave overlay drawn across the ocean map (non-interactive) */
+.map-wave-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.55;
+  mix-blend-mode: screen;
+}
+.map-wave-overlay svg { position: absolute; width: 200%; height: 100%; left: 0; top: 0; }
+.wave-path-1 { animation: waveDrift1 18s linear infinite; }
+.wave-path-2 { animation: waveDrift2 26s linear infinite; }
+.wave-path-3 { animation: waveDrift3 34s linear infinite; }
+@keyframes waveDrift1 { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes waveDrift2 { from { transform: translateX(-10%); } to { transform: translateX(-60%); } }
+@keyframes waveDrift3 { from { transform: translateX(-25%); } to { transform: translateX(-75%); } }
+
+/* ==========================================================================
+   SELF-CONTAINED OCEAN MAP ENGINE (no external map library, no tile requests)
+   ========================================================================== */
+#ocean-map.qorvia-dragging { cursor: grabbing !important; }
+
+.qorvia-map-world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.qorvia-map-world.animated-fly { transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1); }
+
+.qorvia-map-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at 50% 50%, #0a2140 0%, #050e1e 70%, #030812 100%);
+  transition: background 0.4s ease;
+}
+.satellite-theme-on .qorvia-map-bg {
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 42px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 42px),
+    radial-gradient(ellipse at 50% 50%, #1c4a24 0%, #0e2a13 45%, #081c0c 75%, #051007 100%);
+}
+
+.qorvia-continent {
+  fill: #16324f;
+  stroke: rgba(56, 189, 248, 0.35);
+  stroke-width: 1.2;
+  transition: fill 0.4s ease, stroke 0.4s ease;
+}
+.satellite-theme-on .qorvia-continent {
+  fill: #3d6b34;
+  stroke: rgba(255, 214, 120, 0.55);
+  stroke-width: 1.6;
+}
+
+.qorvia-graticule { stroke: rgba(56, 189, 248, 0.08); stroke-width: 1; fill: none; }
+.satellite-theme-on .qorvia-graticule { stroke: rgba(255, 214, 120, 0.15); }
+
+.satellite-theme-on .map-wave-overlay { opacity: 0.25; filter: hue-rotate(70deg) saturate(1.3); }
+
+.qorvia-ocean-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: rgba(0, 240, 255, 0.45);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 16;
+  transition: color 0.4s ease, text-shadow 0.4s ease;
+}
+.satellite-theme-on .qorvia-ocean-label {
+  color: rgba(255, 214, 120, 0.65);
+  text-shadow: 0 0 10px rgba(255, 214, 120, 0.35);
+}
+
+/* Capital city labels — created once, only faded in past CAPITAL_MIN_SCALE
+   (see app.js). Counter-scaled in JS like markers/ocean labels so they stay
+   a constant readable size regardless of zoom. */
+.qorvia-capital-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  z-index: 17;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.qorvia-capital-label.visible { opacity: 1; }
+.qorvia-capital-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fbbf24;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 4px rgba(251, 191, 36, 0.7);
+  flex-shrink: 0;
+}
+.qorvia-capital-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: #fde68a;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+}
+.satellite-theme-on .qorvia-capital-text { color: #fff7d6; }
+
+/* Marker dot — counter-scaled in JS so it stays a constant on-screen size
+   regardless of zoom, exactly like a normal map pin */
+.qorvia-marker {
+  position: absolute;
+  z-index: 20;
+  cursor: pointer;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qorvia-marker .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+}
+.qorvia-marker .tip {
+  position: absolute;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(12, 23, 42, 0.95);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  white-space: nowrap;
+  display: none;
+  pointer-events: none;
+}
+.qorvia-marker:hover .tip { display: block; }
+.qorvia-marker.active .dot { box-shadow: 0 0 0 4px rgba(255,255,255,0.25); }
+
+/* Concentric danger rings — deliberately NOT counter-scaled, so they grow
+   in real proportion to zoom (bigger the more you zoom in), only shown
+   once RING_MIN_SCALE is reached */
+.qorvia-ring {
+  position: absolute;
+  border-radius: 50%;
+  border-style: solid;
+  pointer-events: none;
+  z-index: 18;
+  animation: ringPulse 2.4s ease-out infinite;
+}
+
+/* Demo tour overlay */
+.demo-overlay {
+  position: fixed; inset: 0; background: rgba(3, 7, 18, 0.75); z-index: 8000;
+  display: flex; align-items: center; justify-content: center; transition: opacity 0.3s ease;
+}
+
+/* ==========================================================================
+   LIGHT THEME OVERRIDES — scoped fixes for hardcoded dark Tailwind utility
+   classes inside the hamburger drawer, modals, settings panel, target detail
+   card, and filter panel, so "Turn Darkness" actually repaints these too.
+   ========================================================================== */
+.light-theme #hamburger-drawer .bg-slate-800, .light-theme #settings-modal .bg-slate-800, .light-theme #downloads-modal .bg-slate-800, .light-theme #about-modal .bg-slate-800, .light-theme #sensor-modal .bg-slate-800, .light-theme #target-detail-card .bg-slate-800, .light-theme #filter-box-panel .bg-slate-800, .light-theme #hamburger-drawer .bg-slate-800\/80, .light-theme #settings-modal .bg-slate-800\/80, .light-theme #downloads-modal .bg-slate-800\/80, .light-theme #about-modal .bg-slate-800\/80, .light-theme #sensor-modal .bg-slate-800\/80, .light-theme #target-detail-card .bg-slate-800\/80, .light-theme #filter-box-panel .bg-slate-800\/80, .light-theme #hamburger-drawer .bg-slate-900\/80, .light-theme #settings-modal .bg-slate-900\/80, .light-theme #downloads-modal .bg-slate-900\/80, .light-theme #about-modal .bg-slate-900\/80, .light-theme #sensor-modal .bg-slate-900\/80, .light-theme #target-detail-card .bg-slate-900\/80, .light-theme #filter-box-panel .bg-slate-900\/80, .light-theme #hamburger-drawer .bg-slate-900\/90, .light-theme #settings-modal .bg-slate-900\/90, .light-theme #downloads-modal .bg-slate-900\/90, .light-theme #about-modal .bg-slate-900\/90, .light-theme #sensor-modal .bg-slate-900\/90, .light-theme #target-detail-card .bg-slate-900\/90, .light-theme #filter-box-panel .bg-slate-900\/90, .light-theme #hamburger-drawer .bg-oceanDark\/90, .light-theme #settings-modal .bg-oceanDark\/90, .light-theme #downloads-modal .bg-oceanDark\/90, .light-theme #about-modal .bg-oceanDark\/90, .light-theme #sensor-modal .bg-oceanDark\/90, .light-theme #target-detail-card .bg-oceanDark\/90, .light-theme #filter-box-panel .bg-oceanDark\/90 {
+  background-color: #FFFFFF !important;
+}
+.light-theme #hamburger-drawer .bg-slate-700, .light-theme #settings-modal .bg-slate-700, .light-theme #downloads-modal .bg-slate-700, .light-theme #about-modal .bg-slate-700, .light-theme #sensor-modal .bg-slate-700, .light-theme #target-detail-card .bg-slate-700, .light-theme #filter-box-panel .bg-slate-700 {
+  background-color: #F1F5F9 !important;
+}
+.light-theme #hamburger-drawer .border-slate-600, .light-theme #settings-modal .border-slate-600, .light-theme #downloads-modal .border-slate-600, .light-theme #about-modal .border-slate-600, .light-theme #sensor-modal .border-slate-600, .light-theme #target-detail-card .border-slate-600, .light-theme #filter-box-panel .border-slate-600, .light-theme #hamburger-drawer .border-slate-700, .light-theme #settings-modal .border-slate-700, .light-theme #downloads-modal .border-slate-700, .light-theme #about-modal .border-slate-700, .light-theme #sensor-modal .border-slate-700, .light-theme #target-detail-card .border-slate-700, .light-theme #filter-box-panel .border-slate-700, .light-theme #hamburger-drawer .border-slate-800, .light-theme #settings-modal .border-slate-800, .light-theme #downloads-modal .border-slate-800, .light-theme #about-modal .border-slate-800, .light-theme #sensor-modal .border-slate-800, .light-theme #target-detail-card .border-slate-800, .light-theme #filter-box-panel .border-slate-800 {
+  border-color: #E2E8F0 !important;
+}
+.light-theme #hamburger-drawer .border-cyan-400, .light-theme #settings-modal .border-cyan-400, .light-theme #downloads-modal .border-cyan-400, .light-theme #about-modal .border-cyan-400, .light-theme #sensor-modal .border-cyan-400, .light-theme #target-detail-card .border-cyan-400, .light-theme #filter-box-panel .border-cyan-400, .light-theme #hamburger-drawer .border-cyan-500\/20, .light-theme #settings-modal .border-cyan-500\/20, .light-theme #downloads-modal .border-cyan-500\/20, .light-theme #about-modal .border-cyan-500\/20, .light-theme #sensor-modal .border-cyan-500\/20, .light-theme #target-detail-card .border-cyan-500\/20, .light-theme #filter-box-panel .border-cyan-500\/20, .light-theme #hamburger-drawer .border-cyan-500\/30, .light-theme #settings-modal .border-cyan-500\/30, .light-theme #downloads-modal .border-cyan-500\/30, .light-theme #about-modal .border-cyan-500\/30, .light-theme #sensor-modal .border-cyan-500\/30, .light-theme #target-detail-card .border-cyan-500\/30, .light-theme #filter-box-panel .border-cyan-500\/30, .light-theme #hamburger-drawer .border-cyan-500\/40, .light-theme #settings-modal .border-cyan-500\/40, .light-theme #downloads-modal .border-cyan-500\/40, .light-theme #about-modal .border-cyan-500\/40, .light-theme #sensor-modal .border-cyan-500\/40, .light-theme #target-detail-card .border-cyan-500\/40, .light-theme #filter-box-panel .border-cyan-500\/40 {
+  border-color: #E2E8F0 !important;
+}
+.light-theme #hamburger-drawer .text-white, .light-theme #settings-modal .text-white, .light-theme #downloads-modal .text-white, .light-theme #about-modal .text-white, .light-theme #sensor-modal .text-white, .light-theme #target-detail-card .text-white, .light-theme #filter-box-panel .text-white {
+  color: #0F172A !important;
+}
+.light-theme #hamburger-drawer .text-slate-200, .light-theme #settings-modal .text-slate-200, .light-theme #downloads-modal .text-slate-200, .light-theme #about-modal .text-slate-200, .light-theme #sensor-modal .text-slate-200, .light-theme #target-detail-card .text-slate-200, .light-theme #filter-box-panel .text-slate-200, .light-theme #hamburger-drawer .text-slate-300, .light-theme #settings-modal .text-slate-300, .light-theme #downloads-modal .text-slate-300, .light-theme #about-modal .text-slate-300, .light-theme #sensor-modal .text-slate-300, .light-theme #target-detail-card .text-slate-300, .light-theme #filter-box-panel .text-slate-300 {
+  color: #475569 !important;
+}
+.light-theme #hamburger-drawer .text-slate-400, .light-theme #settings-modal .text-slate-400, .light-theme #downloads-modal .text-slate-400, .light-theme #about-modal .text-slate-400, .light-theme #sensor-modal .text-slate-400, .light-theme #target-detail-card .text-slate-400, .light-theme #filter-box-panel .text-slate-400, .light-theme #hamburger-drawer .text-slate-500, .light-theme #settings-modal .text-slate-500, .light-theme #downloads-modal .text-slate-500, .light-theme #about-modal .text-slate-500, .light-theme #sensor-modal .text-slate-500, .light-theme #target-detail-card .text-slate-500, .light-theme #filter-box-panel .text-slate-500 {
+  color: #64748B !important;
+}
+.light-theme #hamburger-drawer .text-cyan-300, .light-theme #settings-modal .text-cyan-300, .light-theme #downloads-modal .text-cyan-300, .light-theme #about-modal .text-cyan-300, .light-theme #sensor-modal .text-cyan-300, .light-theme #target-detail-card .text-cyan-300, .light-theme #filter-box-panel .text-cyan-300, .light-theme #hamburger-drawer .text-cyan-400, .light-theme #settings-modal .text-cyan-400, .light-theme #downloads-modal .text-cyan-400, .light-theme #about-modal .text-cyan-400, .light-theme #sensor-modal .text-cyan-400, .light-theme #target-detail-card .text-cyan-400, .light-theme #filter-box-panel .text-cyan-400 {
+  color: #2563EB !important;
+}
+.light-theme #hamburger-drawer .bg-cyan-500, .light-theme #settings-modal .bg-cyan-500, .light-theme #downloads-modal .bg-cyan-500, .light-theme #about-modal .bg-cyan-500, .light-theme #sensor-modal .bg-cyan-500, .light-theme #target-detail-card .bg-cyan-500, .light-theme #filter-box-panel .bg-cyan-500, .light-theme #hamburger-drawer .bg-cyan-600, .light-theme #settings-modal .bg-cyan-600, .light-theme #downloads-modal .bg-cyan-600, .light-theme #about-modal .bg-cyan-600, .light-theme #sensor-modal .bg-cyan-600, .light-theme #target-detail-card .bg-cyan-600, .light-theme #filter-box-panel .bg-cyan-600, .light-theme #hamburger-drawer .bg-cyan-600\/90, .light-theme #settings-modal .bg-cyan-600\/90, .light-theme #downloads-modal .bg-cyan-600\/90, .light-theme #about-modal .bg-cyan-600\/90, .light-theme #sensor-modal .bg-cyan-600\/90, .light-theme #target-detail-card .bg-cyan-600\/90, .light-theme #filter-box-panel .bg-cyan-600\/90 {
+  background-color: #2563EB !important; color: #FFFFFF !important;
+}
+.light-theme #hamburger-drawer .bg-cyan-500\/20, .light-theme #settings-modal .bg-cyan-500\/20, .light-theme #downloads-modal .bg-cyan-500\/20, .light-theme #about-modal .bg-cyan-500\/20, .light-theme #sensor-modal .bg-cyan-500\/20, .light-theme #target-detail-card .bg-cyan-500\/20, .light-theme #filter-box-panel .bg-cyan-500\/20 {
+  background-color: rgba(37, 99, 235, 0.12) !important;
+}
+.light-theme #hamburger-drawer .bg-emerald-400, .light-theme #settings-modal .bg-emerald-400, .light-theme #downloads-modal .bg-emerald-400, .light-theme #about-modal .bg-emerald-400, .light-theme #sensor-modal .bg-emerald-400, .light-theme #target-detail-card .bg-emerald-400, .light-theme #filter-box-panel .bg-emerald-400 {
+  background-color: #16A34A !important;
+}
+.light-theme #hamburger-drawer .bg-emerald-500\/10, .light-theme #settings-modal .bg-emerald-500\/10, .light-theme #downloads-modal .bg-emerald-500\/10, .light-theme #about-modal .bg-emerald-500\/10, .light-theme #sensor-modal .bg-emerald-500\/10, .light-theme #target-detail-card .bg-emerald-500\/10, .light-theme #filter-box-panel .bg-emerald-500\/10, .light-theme #hamburger-drawer .bg-emerald-500\/20, .light-theme #settings-modal .bg-emerald-500\/20, .light-theme #downloads-modal .bg-emerald-500\/20, .light-theme #about-modal .bg-emerald-500\/20, .light-theme #sensor-modal .bg-emerald-500\/20, .light-theme #target-detail-card .bg-emerald-500\/20, .light-theme #filter-box-panel .bg-emerald-500\/20 {
+  background-color: rgba(22, 163, 74, 0.12) !important;
+}
+.light-theme #hamburger-drawer .text-emerald-300, .light-theme #settings-modal .text-emerald-300, .light-theme #downloads-modal .text-emerald-300, .light-theme #about-modal .text-emerald-300, .light-theme #sensor-modal .text-emerald-300, .light-theme #target-detail-card .text-emerald-300, .light-theme #filter-box-panel .text-emerald-300, .light-theme #hamburger-drawer .text-emerald-400, .light-theme #settings-modal .text-emerald-400, .light-theme #downloads-modal .text-emerald-400, .light-theme #about-modal .text-emerald-400, .light-theme #sensor-modal .text-emerald-400, .light-theme #target-detail-card .text-emerald-400, .light-theme #filter-box-panel .text-emerald-400 {
+  color: #16A34A !important;
+}
+.light-theme #hamburger-drawer .border-emerald-500\/30, .light-theme #settings-modal .border-emerald-500\/30, .light-theme #downloads-modal .border-emerald-500\/30, .light-theme #about-modal .border-emerald-500\/30, .light-theme #sensor-modal .border-emerald-500\/30, .light-theme #target-detail-card .border-emerald-500\/30, .light-theme #filter-box-panel .border-emerald-500\/30 {
+  border-color: rgba(22, 163, 74, 0.4) !important;
+}
+.light-theme #hamburger-drawer .bg-red-500, .light-theme #settings-modal .bg-red-500, .light-theme #downloads-modal .bg-red-500, .light-theme #about-modal .bg-red-500, .light-theme #sensor-modal .bg-red-500, .light-theme #target-detail-card .bg-red-500, .light-theme #filter-box-panel .bg-red-500 {
+  background-color: #DC2626 !important;
+}
+.light-theme #hamburger-drawer .bg-red-500\/20, .light-theme #settings-modal .bg-red-500\/20, .light-theme #downloads-modal .bg-red-500\/20, .light-theme #about-modal .bg-red-500\/20, .light-theme #sensor-modal .bg-red-500\/20, .light-theme #target-detail-card .bg-red-500\/20, .light-theme #filter-box-panel .bg-red-500\/20 {
+  background-color: rgba(220, 38, 38, 0.12) !important;
+}
+.light-theme #hamburger-drawer .text-red-400, .light-theme #settings-modal .text-red-400, .light-theme #downloads-modal .text-red-400, .light-theme #about-modal .text-red-400, .light-theme #sensor-modal .text-red-400, .light-theme #target-detail-card .text-red-400, .light-theme #filter-box-panel .text-red-400 {
+  color: #DC2626 !important;
+}
+.light-theme #hamburger-drawer .border-red-500\/40, .light-theme #settings-modal .border-red-500\/40, .light-theme #downloads-modal .border-red-500\/40, .light-theme #about-modal .border-red-500\/40, .light-theme #sensor-modal .border-red-500\/40, .light-theme #target-detail-card .border-red-500\/40, .light-theme #filter-box-panel .border-red-500\/40 {
+  border-color: rgba(220, 38, 38, 0.4) !important;
+}
+.light-theme #hamburger-drawer .bg-amber-400, .light-theme #settings-modal .bg-amber-400, .light-theme #downloads-modal .bg-amber-400, .light-theme #about-modal .bg-amber-400, .light-theme #sensor-modal .bg-amber-400, .light-theme #target-detail-card .bg-amber-400, .light-theme #filter-box-panel .bg-amber-400 {
+  background-color: #D97706 !important;
+}
+.light-theme #hamburger-drawer .text-amber-400, .light-theme #settings-modal .text-amber-400, .light-theme #downloads-modal .text-amber-400, .light-theme #about-modal .text-amber-400, .light-theme #sensor-modal .text-amber-400, .light-theme #target-detail-card .text-amber-400, .light-theme #filter-box-panel .text-amber-400 {
+  color: #D97706 !important;
+}
+.light-theme #settings-modal input, .light-theme #settings-modal select {
+  background-color: #FFFFFF !important; color: #0F172A !important; border-color: #E2E8F0 !important;
+}
